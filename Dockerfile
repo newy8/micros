@@ -7,7 +7,7 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
 WORKDIR /src
-COPY ["Micros.API.csproj", "Micros.API/"]
+COPY ["Micros.API/Micros.API.csproj", "Micros.API/"]
 RUN dotnet restore "Micros.API/Micros.API.csproj"
 COPY . .
 WORKDIR "/src/Micros.API"
