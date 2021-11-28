@@ -1,0 +1,50 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: crdemo8dev.azurecr.io
+        username: ${{ secrets.acr_crdemo8dev_username }}
+        password: ${{ secrets.acr_crdemo8dev_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/Micros.API" -f  "Micros.API/Dockerfile" -t crdemo8dev.azurecr.io/kcdemo8:${{ github.sha }} --label dockerfile-path=Micros.API/Dockerfile
+        docker push crdemo8dev.azurecr.io/kcdemo8:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_kcdemo8_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep default | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace default`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: default
+        container-registry-url: crdemo8dev.azurecr.io
+        container-registry-username: ${{ secrets.acr_crdemo8dev_username }}
+        container-registry-password: ${{ secrets.acr_crdemo8dev_password }}
+        secret-name: kcdemo8dockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: default
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+        images: |
+          crdemo8dev.azurecr.io/kcdemo8:${{ github.sha }}
+        imagepullsecrets: |
+          kcdemo8dockerauth
