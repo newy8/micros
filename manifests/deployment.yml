@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "kcdemo8-c714"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "kcdemo8-c714"
+  template:
+    metadata:
+      labels:
+        app: "kcdemo8-c714"
+    spec:
+      containers:
+        - name: "kcdemo8-c714"
+          image: "crdemo8dev.azurecr.io/kcdemo8"
+          ports:
+          - containerPort: 80
